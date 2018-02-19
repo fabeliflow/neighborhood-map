@@ -244,15 +244,12 @@ function MapViewModel(places) {
     }
     map.fitBounds(bounds);
 
-    self.openMarkerInfo = function () {
-        ko.utils.arrayFilter(self.listPOI(), function (item) {
+    self.openMarkerInfo = function (clickedPlace) {
+        clickedPlace.marker.setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(function () { clickedPlace.marker.setAnimation(null); }, 750);
 
-            if (self.title === item.marker.title) {
-                item.marker.setAnimation(google.maps.Animation.BOUNCE);
-                setTimeout(function () { item.marker.setAnimation(null); }, 750);
-            }
-        });
-    }
+        populateInfoWindow(clickedPlace.marker, infoWindow);
+    };
 
     // filter POI
     self.query = ko.observable("");
@@ -336,29 +333,29 @@ function Marker(location, title) {
 
         return markerImage;
     }
+}
 
-    // This function populates the infowindow when the marker is clicked. We'll only allow
-    // one infowindow which will open at the marker that is clicked, and populate based
-    // on that markers position
-    function populateInfoWindow(marker, infowindow) {
+// This function populates the infowindow when the marker is clicked. We'll only allow
+// one infowindow which will open at the marker that is clicked, and populate based
+// on that markers position
+function populateInfoWindow(marker, infowindow) {
 
-        // Check to make sure the infowindow is not already opened on this marker
-        if (infowindow.marker != marker) {
+    // Check to make sure the infowindow is not already opened on this marker
+    if (infowindow.marker != marker) {
 
-            // Clear the infowindow content
-            infowindow.setContent('');
-            infowindow.marker = marker;
+        // Clear the infowindow content
+        infowindow.setContent('');
+        infowindow.marker = marker;
 
-            // Make sure the marker property is cleared if the infowindow is closed
-            infowindow.addListener('closeclick', function () {
-                infowindow.marker = null;
-            });
+        // Make sure the marker property is cleared if the infowindow is closed
+        infowindow.addListener('closeclick', function () {
+            infowindow.marker = null;
+        });
 
 
 
-            // Open the infowindow on the correct marker.
-            infowindow.open(map, marker);
-        }
+        // Open the infowindow on the correct marker.
+        infowindow.open(map, marker);
     }
 }
 
