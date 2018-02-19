@@ -16,22 +16,29 @@
 </head>
 
 <body>
+    <div class="map-cont">
+        <div class="row">
+            <form class="col s12">
+                <div class="row">
+                    <div class="input-field col s12">
+                        <input type="search" placeholder="Search for Places of Interest" data-bind="textInput: query" autocomplete="off" />
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!-- Neighborhood map -->
+        <div id="map"></div>
+    </div>
 
     <!-- Side list menu -->
-    <ul id="slide-out" class="side-nav fixed">
+    <ul id="slide-out" class="side-nav fixed" data-bind="foreach: filteredPOI">
         <li>
-            <a href="#!">First Sidebar Link</a>
-        </li>
-        <li>
-            <a href="#!">Second Sidebar Link</a>
+            <a href="#" data-bind="text: title, click: $parent.openMarkerInfo"></a>
         </li>
     </ul>
     <a href="#" data-activates="slide-out" class="button-collapse">
         <i class="material-icons">menu</i>
     </a>
-
-    <!-- Neighborhood map -->
-    <div id="map"></div>
 
     <!--Import jQuery before materialize.js-->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
@@ -44,7 +51,8 @@
     <script type="text/javascript" src="js/scripts.js"></script>
 
     <!-- Google Maps API -->
-    <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyDAV5lrYsTcnqJBPjYytyHlA-gW7_K6sro&v=3&callback=initMap" onerror="googleMapsError()"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyDAV5lrYsTcnqJBPjYytyHlA-gW7_K6sro&v=3&callback=initMap"
+        onerror="googleMapsError()"></script>
 </body>
 
 </html>

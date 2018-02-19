@@ -7,12 +7,17 @@ $('.button-collapse').sideNav({
 }
 );
 
+// global map and infoWindow
+var map;
+var infoWindow;
+
+// Create a new blank array for all the listing markers.
+var markers = [];
+
 // Initialize google map
 function initMap() {
 
-    // Map Id and options
-    var mapId = 'map';
-
+    // Map options
     var westchase = { lat: 28.0620207, lng: -82.648394 };
 
     var mapOptions = {
@@ -197,58 +202,122 @@ function initMap() {
         mapTypeControl: false
     }
 
-    var infoWindow = new google.maps.InfoWindow();
+    infoWindow = new google.maps.InfoWindow();
 
-    NeighborhoodMap(mapId, mapOptions);
+    map = new google.maps.Map(document.getElementById('map'), mapOptions);
 
-    ko.applyBindings(new MapViewModel());
+    // Make sure the map stays centered on resize
+    google.maps.event.addDomListener(window, 'resize', function () {
+        var center = map.getCenter();
+        google.maps.event.trigger(map, 'resize');
+        map.setCenter(center);
+    });
+
+    // Westchase places of interest
+    var westchasePOI = [
+        { title: 'Catch Twenty Three', location: { lat: 28.0433568, lng: -82.5970998 } },
+        { title: 'Senor Tequila', location: { lat: 28.069344, lng: -82.6361983 } },
+        { title: 'Ed Radice Sports Complex', location: { lat: 28.0829266, lng: -82.6085566 } },
+        { title: 'Maureen B. Gauzza Regional Library', location: { lat: 28.018859, lng: -82.6127279 } },
+        { title: 'Westfield Citrus Park', location: { lat: 28.0689622, lng: -82.5787818 } }
+    ];
+
+    ko.applyBindings(new MapViewModel(westchasePOI));
 }
 
 // Map viewmodel
-function MapViewModel() {
-    var self = this;
-}
-
-// Creates a neighborhood map
-function NeighborhoodMap(id, options) {
-
+function MapViewModel(places) {
     var self = this;
 
-    this.map = new google.maps.Map(document.getElementById(id), options);
+    // Points of interest list (will change based on filtering)
+    self.listPOI = ko.observableArray();
+
+    places.forEach(function (place) {
+        self.listPOI.push(new Marker(place.location, place.title));
+    });
+
+    var bounds = new google.maps.LatLngBounds();
+    // Extend the boundaries of the map for each marker and display the marker
+    for (var i = 0; i < markers.length; i++) {
+        markers[i].setMap(map);
+        bounds.extend(markers[i].position);
+    }
+    map.fitBounds(bounds);
+
+    self.openMarkerInfo = function () {
+        ko.utils.arrayFilter(self.listPOI(), function (item) {
+
+            if (self.title === item.marker.title) {
+                item.marker.setAnimation(google.maps.Animation.BOUNCE);
+                setTimeout(function () { item.marker.setAnimation(null); }, 750);
+            }
+        });
+    }
+
+    // filter POI
+    self.query = ko.observable("");
+    self.filteredPOI = ko.computed(function () {
+        var filter = self.query().toLowerCase();
+
+        if (!filter) {
+
+            // If not filtered, show all markers and places in the list
+            ko.utils.arrayFilter(self.listPOI(), function (item) {
+
+                item.marker.setVisible(true);
+            });
+            return self.listPOI();
+        } else {
+            return ko.utils.arrayFilter(self.listPOI(), function (item) {
+
+                // return the filtered places (markers and list)
+                var result = (item.title.toLowerCase().search(filter) >= 0);
+                item.marker.setVisible(result);
+                return result;
+            });
+        }
+    });
 }
 
 // Creates a location marker
-function LocationMarker(position, title) {
+function Marker(location, title) {
 
     var self = this;
 
-    self.position = position;
+    self.location = location;
     self.title = title;
 
     // marker icon (default and highlighted)
     var defaultIcon = makeMarkerIcon('0091ff');
 
-    var highlightedIcon = makeMarkerIcon('fff24');
+    var highlightedIcon = makeMarkerIcon('FFFF24');
 
-    var marker = new google.maps.Marker({
-        position: this.position,
+    self.marker = new google.maps.Marker({
+        position: this.location,
         title: this.title,
         animation: google.maps.Animation.DROP,
-        icon: defaultIcon
+        icon: defaultIcon,
+        map: map
     });
 
+    // Push the marker to our array of markers
+    markers.push(self.marker);
+
     // Create an onclick event to open the large infowindow at each marker
-    marker.addListener('click', function () {
+    self.marker.addListener('click', function () {
+        self.marker.setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(function () { self.marker.setAnimation(null); }, 750);
+
         populateInfoWindow(this, infoWindow);
     });
 
     // Two event listeners - one for mouseover, one for mouseout,
     // to change the colors back and forth.
-    marker.addListener('mouseover', function () {
+    self.marker.addListener('mouseover', function () {
         this.setIcon(highlightedIcon);
     });
 
-    marker.addListener('mouseout', function () {
+    self.marker.addListener('mouseout', function () {
         this.setIcon(defaultIcon);
     });
 
@@ -270,58 +339,22 @@ function LocationMarker(position, title) {
 
     // This function populates the infowindow when the marker is clicked. We'll only allow
     // one infowindow which will open at the marker that is clicked, and populate based
-    // on that markers position.
+    // on that markers position
     function populateInfoWindow(marker, infowindow) {
 
-        // Check to make sure the infowindow is not already opened on this marker.
+        // Check to make sure the infowindow is not already opened on this marker
         if (infowindow.marker != marker) {
 
-            // Clear the infowindow content to give the streetview time to load.
+            // Clear the infowindow content
             infowindow.setContent('');
             infowindow.marker = marker;
 
-            // Make sure the marker property is cleared if the infowindow is closed.
+            // Make sure the marker property is cleared if the infowindow is closed
             infowindow.addListener('closeclick', function () {
                 infowindow.marker = null;
             });
 
-            var streetViewService = new google.maps.StreetViewService();
-            var radius = 50;
 
-            // In case the status is OK, which means the pano was found, compute the
-            // position of the streetview image, then calculate the heading, then get a
-            // panorama from that and set the options
-            function getStreetView(data, status) {
-
-                if (status == google.maps.StreetViewStatus.OK) {
-
-                    var nearStreetViewLocation = data.location.latLng;
-                    var heading = google.maps.geometry.spherical.computeHeading(
-                        nearStreetViewLocation, marker.position);
-
-                    infowindow.setContent('<div>' + marker.title + '</div><div id="pano"></div>');
-
-                    var panoramaOptions = {
-                        position: nearStreetViewLocation,
-                        pov: {
-                            heading: heading,
-                            pitch: 30
-                        }
-                    };
-
-                    var panorama = new google.maps.StreetViewPanorama(
-                        document.getElementById('pano'), panoramaOptions);
-
-                } else {
-
-                    infowindow.setContent('<div>' + marker.title + '</div>' +
-                        '<div>No Street View Found</div>');
-                }
-            }
-
-            // Use streetview service to get the closest streetview image within
-            // 50 meters of the markers position
-            streetViewService.getPanoramaByLocation(marker.position, radius, getStreetView);
 
             // Open the infowindow on the correct marker.
             infowindow.open(map, marker);
