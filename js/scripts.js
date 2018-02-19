@@ -7,9 +7,13 @@ $('.button-collapse').sideNav({
 }
 );
 
-// global map and infoWindow
+// Global map and infoWindow
 var map;
 var infoWindow;
+
+// Icon states
+var defaultIcon;
+var highlightedIcon;
 
 // Create a new blank array for all the listing markers.
 var markers = [];
@@ -199,7 +203,8 @@ function initMap() {
                 ]
             }
         ],
-        mapTypeControl: false
+        mapTypeControl: false,
+        draggable: false
     }
 
     infoWindow = new google.maps.InfoWindow();
@@ -237,11 +242,13 @@ function MapViewModel(places) {
     });
 
     var bounds = new google.maps.LatLngBounds();
+
     // Extend the boundaries of the map for each marker and display the marker
-    for (var i = 0; i < markers.length; i++) {
-        markers[i].setMap(map);
-        bounds.extend(markers[i].position);
-    }
+    markers.forEach(function (marker) {
+        marker.setMap(map);
+        bounds.extend(marker.position);
+    });
+
     map.fitBounds(bounds);
 
     self.openMarkerInfo = function (clickedPlace) {
@@ -285,9 +292,9 @@ function Marker(location, title) {
     self.title = title;
 
     // marker icon (default and highlighted)
-    var defaultIcon = makeMarkerIcon('0091ff');
+    defaultIcon = makeMarkerIcon('26a69a');
 
-    var highlightedIcon = makeMarkerIcon('FFFF24');
+    highlightedIcon = makeMarkerIcon('ccff66');
 
     self.marker = new google.maps.Marker({
         position: this.location,
@@ -306,16 +313,6 @@ function Marker(location, title) {
         setTimeout(function () { self.marker.setAnimation(null); }, 750);
 
         populateInfoWindow(this, infoWindow);
-    });
-
-    // Two event listeners - one for mouseover, one for mouseout,
-    // to change the colors back and forth.
-    self.marker.addListener('mouseover', function () {
-        this.setIcon(highlightedIcon);
-    });
-
-    self.marker.addListener('mouseout', function () {
-        this.setIcon(defaultIcon);
     });
 
     // This function takes in a COLOR, and then creates a new marker
@@ -350,13 +347,22 @@ function populateInfoWindow(marker, infowindow) {
         // Make sure the marker property is cleared if the infowindow is closed
         infowindow.addListener('closeclick', function () {
             infowindow.marker = null;
+            marker.setIcon(defaultIcon);
         });
 
+        defaultColorPin();
 
+        marker.setIcon(highlightedIcon);
 
         // Open the infowindow on the correct marker.
         infowindow.open(map, marker);
     }
+}
+
+function defaultColorPin() {
+    markers.forEach(function (marker) {
+        marker.setIcon(defaultIcon);
+    });
 }
 
 // Map error handler
