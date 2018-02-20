@@ -15,6 +15,10 @@ var infoWindow;
 var defaultIcon;
 var highlightedIcon;
 
+// Foursquare
+var clientID = 'SSYLTBH3DBHQJZQ3P3SGSST0TSIVCPTCMBZXVAKC0L02BY41';
+var clientSecret = '0ETDWC4Z115BAYTYOW3OBEK3NIBHPNAK30OXBHBXKBFUWBAA';
+
 // Create a new blank array for all the listing markers.
 var markers = [];
 
@@ -230,6 +234,30 @@ function initMap() {
     ko.applyBindings(new MapViewModel(westchasePOI));
 }
 
+function ExternalApi(marker) {
+
+    var self = this;
+
+    self.lat = marker.position.lat();
+    self.lng = marker.position.lng();
+
+    var apiURL = 'https://api.foursquare.com/v2/venues/search?ll='+ self.lat + ',' + self.lng + '&client_id=' + clientID + '&client_secret=' + clientSecret + '&v=20170801';
+
+    function handleSuccess() {
+        console.log(this.responseText);
+    }
+
+    function handleError() {
+        console.log('An error occurred \uD83D\uDE1E');
+    }
+
+    const asyncRequestObject = new XMLHttpRequest();
+    asyncRequestObject.open('GET', apiURL);
+    asyncRequestObject.onload = handleSuccess;
+    asyncRequestObject.onerror = handleError;
+    asyncRequestObject.send();
+}
+
 // Map viewmodel
 function MapViewModel(places) {
     var self = this;
@@ -353,6 +381,9 @@ function populateInfoWindow(marker, infowindow) {
         defaultColorPin();
 
         marker.setIcon(highlightedIcon);
+
+        // Retrieve Foursquare data
+        ExternalApi(marker);
 
         // Open the infowindow on the correct marker.
         infowindow.open(map, marker);
