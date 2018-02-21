@@ -240,11 +240,42 @@ function ExternalApi(marker) {
 
     self.lat = marker.position.lat();
     self.lng = marker.position.lng();
+    self.title = marker.title;
 
-    var apiURL = 'https://api.foursquare.com/v2/venues/search?ll='+ self.lat + ',' + self.lng + '&client_id=' + clientID + '&client_secret=' + clientSecret + '&v=20170801';
+    self.infoContent;
+
+    self.venueName;
+    self.venueAddress;
+    self.venuePhone;
+    self.venueFormattedPhone;
+
+    var apiURL = 'https://api.foursquare.com/v2/venues/search?ll='+ self.lat + ',' + self.lng + '&client_id=' + clientID + '&client_secret=' + clientSecret + '&query=' + self.title + '&v=20170801' ;
 
     function handleSuccess() {
-        console.log(this.responseText);
+        var data = JSON.parse(this.responseText).response.venues[0];
+
+        self.venueName = data.name;
+        self.venueAddress = data.location.address;
+        self.venuePhone = data.contact.phone;
+        self.venuePhone = data.contact.formattedPhone;
+
+        self.infoContent += '<div>';
+
+        if (self.venueName !== null) {
+            self.infoContent += '<h3>' + self.venueName + '</h3>';
+
+        } else if (self.venueAddress !== null) {
+
+            self.infoContent += '<address>' + self.venueAddress + '</address>';
+
+        } else if (self.venuePhone !== null && self.venueFormattedPhone !== null) {
+
+            self.infoContent += '<a href="tel:+1-' + self.venuePhone + '>' + self.venueFormattedPhone + '</a>';
+        }
+
+        self.infoContent += '</div>';
+
+        return self.infoContent;
     }
 
     function handleError() {
