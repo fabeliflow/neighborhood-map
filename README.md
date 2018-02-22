@@ -1,7 +1,7 @@
 # Neighborhood map
 This is the last project for my Udacity Front-end Developer Nanodegree! It's a neighborhood map which let's you interact with my places of interest in Westchase, FL.
 
-#Instructions
+# Instructions
 1. You can interact with the places of interest by either clicking on the pin or the side list. Once opened, an info window will pop up and the pin will change color and animate (bounce once).
 2. You can search places by entering your query in the search bar on the top.
 3. The application is mobile responsive! If you are on a mobile device and want to access the side list, simply click on the hamburger menu on the top left.
