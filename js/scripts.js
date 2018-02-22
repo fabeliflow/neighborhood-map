@@ -210,7 +210,7 @@ function initMap() {
         ],
         mapTypeControl: false,
         draggable: false
-    }
+    };
 
     // Instantiate infoWindow and map
     infoWindow = new google.maps.InfoWindow();
