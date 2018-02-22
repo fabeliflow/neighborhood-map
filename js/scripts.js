@@ -1,4 +1,4 @@
-// Materialize slide list button
+// Materialize slide list button - source: http://materializecss.com/side-nav.html
 $('.button-collapse').sideNav({
     menuWidth: 300, // Default is 300
     edge: 'left', // Choose the horizontal origin
@@ -15,11 +15,11 @@ var infoWindow;
 var defaultIcon;
 var highlightedIcon;
 
-// Foursquare
+// Foursquare API - source: https://developer.foursquare.com/docs/api/venues/details
 var clientID = 'SSYLTBH3DBHQJZQ3P3SGSST0TSIVCPTCMBZXVAKC0L02BY41';
 var clientSecret = '0ETDWC4Z115BAYTYOW3OBEK3NIBHPNAK30OXBHBXKBFUWBAA';
 
-// Create a new blank array for all the listing markers.
+// Create a new blank array for all the listing markers
 var markers = [];
 
 // Initialize google map
@@ -28,6 +28,7 @@ function initMap() {
     // Map options
     var westchase = { lat: 28.0620207, lng: -82.648394 };
 
+    // Styles from snazzymaps - source: https://snazzymaps.com/style/151/ultra-light-with-labels
     var mapOptions = {
         center: westchase,
         zoom: 13,
@@ -211,8 +212,10 @@ function initMap() {
         draggable: false
     }
 
+    // Instantiate infoWindow and map
     infoWindow = new google.maps.InfoWindow();
 
+    // Udacity Google API course: https://classroom.udacity.com/nanodegrees/nd001/parts/91561162-9864-4caf-b2aa-e6504385e4e2/modules/4fd8d440-9428-4de7-93c0-4dca17a36700/lessons/8304370457/concepts/83061122970923
     map = new google.maps.Map(document.getElementById('map'), mapOptions);
 
     // Make sure the map stays centered on resize
@@ -231,27 +234,35 @@ function initMap() {
         { title: 'Westfield Citrus Park', location: { lat: 28.0689622, lng: -82.5787818 } }
     ];
 
+    // Knockout bindings - source: http://learn.knockoutjs.com/#/?tutorial=collections
     ko.applyBindings(new MapViewModel(westchasePOI));
 }
 
+// This function makes an API call (Foursquare), retrieves the data and sends it to the infowindow
 function ExternalApi(marker) {
 
     var self = this;
 
+    // Get marker info for data retrieval
     self.lat = marker.position.lat();
     self.lng = marker.position.lng();
     self.title = marker.title;
 
     self.infoContent;
 
+    // Venue info
     self.venueName;
     self.venueAddress;
     self.venuePhone;
     self.venueFormattedPhone;
 
+    // API URL
     var apiURL = 'https://api.foursquare.com/v2/venues/search?ll=' + self.lat + ',' + self.lng + '&client_id=' + clientID + '&client_secret=' + clientSecret + '&query=' + self.title + '&v=20170801';
 
+    // This function handles a successful Http request
     function handleSuccess() {
+
+        // Retrieve the data from Foursquare (JSON)
         var data = JSON.parse(this.responseText).response.venues[0];
 
         self.venueName = data.name;
@@ -259,8 +270,11 @@ function ExternalApi(marker) {
         self.venuePhone = data.contact.phone;
         self.venueFormattedPhone = data.contact.formattedPhone;
 
+        // Create info window content elements
         self.infoContent = '<div class="venueInfo">';
 
+        // If we have data, make sure each data piece is available. If so, add it to our
+        // info window content
         if (data) {
 
             if (self.venueName !== undefined) {
@@ -278,27 +292,26 @@ function ExternalApi(marker) {
             }
 
         } else {
+
             self.infoContent = 'No info found :(';
         }
 
         self.infoContent += '</div>';
 
+        // Pass retrieved data to info window
         populateInfoWindow(marker, infoContent);
     }
 
-    // function handleError() {
-    //     infoContent = 'An error occurred \uD83D\uDE1E';
-    // }
-
+    // Ajax with XHR - source: https://classroom.udacity.com/nanodegrees/nd001/parts/91561162-9864-4caf-b2aa-e6504385e4e2/modules/3cc28649-e29e-4095-8dc9-d7943de84d87/lessons/8cb1042e-3260-469c-9f78-8e2f092a4725/concepts/39d3a627-aa6c-4123-8579-0495fdb32e8e
     const asyncRequestObject = new XMLHttpRequest();
     asyncRequestObject.open('GET', apiURL);
     asyncRequestObject.onload = handleSuccess;
-    // asyncRequestObject.onerror = handleError;
     asyncRequestObject.send();
 }
 
 // Map viewmodel
 function MapViewModel(places) {
+
     var self = this;
 
     // Points of interest list (will change based on filtering)
@@ -308,9 +321,9 @@ function MapViewModel(places) {
         self.listPOI.push(new Marker(place.location, place.title));
     });
 
+    // Extend the boundaries of the map for each marker and display the marker
     var bounds = new google.maps.LatLngBounds();
 
-    // Extend the boundaries of the map for each marker and display the marker
     markers.forEach(function (marker) {
         marker.setMap(map);
         bounds.extend(marker.position);
@@ -318,16 +331,20 @@ function MapViewModel(places) {
 
     map.fitBounds(bounds);
 
+    // Animate selected marker and send it to the api call function
     self.openMarkerInfo = function (clickedPlace) {
+
         clickedPlace.marker.setAnimation(google.maps.Animation.BOUNCE);
         setTimeout(function () { clickedPlace.marker.setAnimation(null); }, 750);
 
         ExternalApi(clickedPlace.marker);
     };
 
-    // filter POI
+    // Filter POI - modified from this example: http://jsfiddle.net/zf5k9rxq
     self.query = ko.observable("");
+
     self.filteredPOI = ko.computed(function () {
+
         var filter = self.query().toLowerCase();
 
         if (!filter) {
@@ -336,20 +353,17 @@ function MapViewModel(places) {
             ko.utils.arrayFilter(self.listPOI(), function (item) {
 
                 item.marker.setVisible(true);
-
-                // Close the infowindow content
-                // infoWindow.close();
             });
+
             return self.listPOI();
+
         } else {
+
             return ko.utils.arrayFilter(self.listPOI(), function (item) {
 
-                // return the filtered places (markers and list)
+                // Return the filtered places (markers and list)
                 var result = (item.title.toLowerCase().search(filter) >= 0);
                 item.marker.setVisible(result);
-
-                // Close the infowindow content
-                // infoWindow.close();
 
                 // Reset pin colors
                 defaultColorPin();
@@ -368,7 +382,7 @@ function Marker(location, title) {
     self.location = location;
     self.title = title;
 
-    // marker icon (default and highlighted)
+    // Marker icon (default and highlighted)
     defaultIcon = makeMarkerIcon('26a69a');
 
     highlightedIcon = makeMarkerIcon('ccff66');
@@ -438,6 +452,7 @@ function populateInfoWindow(marker, infoContent) {
     }
 }
 
+// This function resets pins to default
 function defaultColorPin() {
     markers.forEach(function (marker) {
         marker.setIcon(defaultIcon);
