@@ -58,3 +58,12 @@ a {
 #map {
   flex: 1;
 }
+
+.venueInfo {
+  padding: 10px;
+}
+
+.venueInfo h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}

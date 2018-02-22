@@ -249,7 +249,7 @@ function ExternalApi(marker) {
     self.venuePhone;
     self.venueFormattedPhone;
 
-    var apiURL = 'https://api.foursquare.com/v2/venues/search?ll='+ self.lat + ',' + self.lng + '&client_id=' + clientID + '&client_secret=' + clientSecret + '&query=' + self.title + '&v=20170801' ;
+    var apiURL = 'https://api.foursquare.com/v2/venues/search?ll=' + self.lat + ',' + self.lng + '&client_id=' + clientID + '&client_secret=' + clientSecret + '&query=' + self.title + '&v=20170801';
 
     function handleSuccess() {
         var data = JSON.parse(this.responseText).response.venues[0];
@@ -257,35 +257,43 @@ function ExternalApi(marker) {
         self.venueName = data.name;
         self.venueAddress = data.location.address;
         self.venuePhone = data.contact.phone;
-        self.venuePhone = data.contact.formattedPhone;
+        self.venueFormattedPhone = data.contact.formattedPhone;
 
-        self.infoContent += '<div>';
+        self.infoContent = '<div class="venueInfo">';
 
-        if (self.venueName !== null) {
-            self.infoContent += '<h3>' + self.venueName + '</h3>';
+        if (data) {
 
-        } else if (self.venueAddress !== null) {
+            if (self.venueName !== undefined) {
+                self.infoContent += '<h3>' + self.venueName + '</h3>';
+            }
 
-            self.infoContent += '<address>' + self.venueAddress + '</address>';
+            if (self.venueAddress !== undefined) {
 
-        } else if (self.venuePhone !== null && self.venueFormattedPhone !== null) {
+                self.infoContent += '<address>' + self.venueAddress + '</address>';
+            }
 
-            self.infoContent += '<a href="tel:+1-' + self.venuePhone + '>' + self.venueFormattedPhone + '</a>';
+            if (self.venuePhone !== undefined && self.venueFormattedPhone !== undefined) {
+
+                self.infoContent += '<a href="tel:+1-' + self.venuePhone + '">' + self.venueFormattedPhone + '</a>';
+            }
+
+        } else {
+            self.infoContent = 'No info found :(';
         }
 
         self.infoContent += '</div>';
 
-        return self.infoContent;
+        populateInfoWindow(marker, infoContent);
     }
 
-    function handleError() {
-        console.log('An error occurred \uD83D\uDE1E');
-    }
+    // function handleError() {
+    //     infoContent = 'An error occurred \uD83D\uDE1E';
+    // }
 
     const asyncRequestObject = new XMLHttpRequest();
     asyncRequestObject.open('GET', apiURL);
     asyncRequestObject.onload = handleSuccess;
-    asyncRequestObject.onerror = handleError;
+    // asyncRequestObject.onerror = handleError;
     asyncRequestObject.send();
 }
 
@@ -314,7 +322,7 @@ function MapViewModel(places) {
         clickedPlace.marker.setAnimation(google.maps.Animation.BOUNCE);
         setTimeout(function () { clickedPlace.marker.setAnimation(null); }, 750);
 
-        populateInfoWindow(clickedPlace.marker, infoWindow);
+        ExternalApi(clickedPlace.marker);
     };
 
     // filter POI
@@ -328,6 +336,9 @@ function MapViewModel(places) {
             ko.utils.arrayFilter(self.listPOI(), function (item) {
 
                 item.marker.setVisible(true);
+
+                // Close the infowindow content
+                // infoWindow.close();
             });
             return self.listPOI();
         } else {
@@ -336,6 +347,13 @@ function MapViewModel(places) {
                 // return the filtered places (markers and list)
                 var result = (item.title.toLowerCase().search(filter) >= 0);
                 item.marker.setVisible(result);
+
+                // Close the infowindow content
+                // infoWindow.close();
+
+                // Reset pin colors
+                defaultColorPin();
+
                 return result;
             });
         }
@@ -371,7 +389,7 @@ function Marker(location, title) {
         self.marker.setAnimation(google.maps.Animation.BOUNCE);
         setTimeout(function () { self.marker.setAnimation(null); }, 750);
 
-        populateInfoWindow(this, infoWindow);
+        ExternalApi(this);
     });
 
     // This function takes in a COLOR, and then creates a new marker
@@ -394,18 +412,18 @@ function Marker(location, title) {
 // This function populates the infowindow when the marker is clicked. We'll only allow
 // one infowindow which will open at the marker that is clicked, and populate based
 // on that markers position
-function populateInfoWindow(marker, infowindow) {
+function populateInfoWindow(marker, infoContent) {
 
     // Check to make sure the infowindow is not already opened on this marker
-    if (infowindow.marker != marker) {
+    if (infoWindow.marker != marker) {
 
         // Clear the infowindow content
-        infowindow.setContent('');
-        infowindow.marker = marker;
+        infoWindow.setContent('');
+        infoWindow.marker = marker;
 
         // Make sure the marker property is cleared if the infowindow is closed
-        infowindow.addListener('closeclick', function () {
-            infowindow.marker = null;
+        infoWindow.addListener('closeclick', function () {
+            infoWindow.marker = null;
             marker.setIcon(defaultIcon);
         });
 
@@ -413,11 +431,10 @@ function populateInfoWindow(marker, infowindow) {
 
         marker.setIcon(highlightedIcon);
 
-        // Retrieve Foursquare data
-        ExternalApi(marker);
+        infoWindow.setContent(infoContent);
 
         // Open the infowindow on the correct marker.
-        infowindow.open(map, marker);
+        infoWindow.open(map, marker);
     }
 }
 
@@ -425,6 +442,8 @@ function defaultColorPin() {
     markers.forEach(function (marker) {
         marker.setIcon(defaultIcon);
     });
+
+    infoWindow.close();
 }
 
 // Map error handler
