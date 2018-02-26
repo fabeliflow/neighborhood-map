@@ -302,10 +302,15 @@ function ExternalApi(marker) {
         populateInfoWindow(marker, infoContent);
     }
 
+    function handleError () { 
+        console.log('An error occurred while getting Foursquare data');
+    }
+
     // Ajax with XHR - source: https://classroom.udacity.com/nanodegrees/nd001/parts/91561162-9864-4caf-b2aa-e6504385e4e2/modules/3cc28649-e29e-4095-8dc9-d7943de84d87/lessons/8cb1042e-3260-469c-9f78-8e2f092a4725/concepts/39d3a627-aa6c-4123-8579-0495fdb32e8e
     const asyncRequestObject = new XMLHttpRequest();
     asyncRequestObject.open('GET', apiURL);
     asyncRequestObject.onload = handleSuccess;
+    asyncRequestObject.onerror = handleError;
     asyncRequestObject.send();
 }
 
